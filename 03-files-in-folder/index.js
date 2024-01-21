@@ -6,7 +6,6 @@ const folderPath = path.join(__dirname, "secret-folder");
 fs.readdir(folderPath,
     { withFileTypes: true },
     (err, files) => {
-        console.log("\nCurrent directory files:"); 
         if (err) {
             console.error(err);
         } else {

@@ -7,9 +7,7 @@ const copyPath = path.join(__dirname, "project-dist", "assets");
 const stylesPath = path.join(__dirname, "styles");
 const copyStylesPath = path.join(__dirname, "project-dist", "style.css");
 const templatePath = path.join(__dirname, "template.html");
-const headerPath = path.join(__dirname, "components", "header.html");
-const articlesPath = path.join(__dirname, "components", "articles.html");
-const footerPath = path.join(__dirname, "components", "footer.html");
+const componentsPath = path.join(__dirname, "components");
 const indexPath = path.join(__dirname, "project-dist", "index.html");
 
 
@@ -114,43 +112,27 @@ const createStyles = async () => {
     }
 };
 
-copyDir(folderPath, copyPath)
-  .then(() => createStyles())
-  .catch(err => console.error(err));
-
-fs.readFile(templatePath, "utf8", (err, data) => {
-    if (err) {
-        console.error(err);
-        return;
-    }
-  
-    fs.readFile(headerPath, "utf8", (err, header) => {
-        if (err) {
-            console.error(err);
-            return;
-        }
-        
-        fs.readFile(articlesPath, "utf8", (err, articles) => {
-            if (err) {
-                console.error(err);
-                return;
-            }
+const replaceTags = async () => {
+    try {
+        const template = await fs.promises.readFile(templatePath, "utf8");
+        const tags = template.match(/{{([^{}]+)}}/g);
             
-            fs.readFile(footerPath, "utf8", (err, footer) => {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
-                
-                const mainHTML = data.replace("{{header}}", header).replace("{{articles}}", articles).replace("{{footer}}", footer);
-                fs.writeFile(indexPath, mainHTML, "utf8", (err) => {
-                    
-                    if (err) {
-                        console.error(err);
-                        return;
-                    }
-                });
-            });
-        });
-    });
-});
+        if (tags) {
+            let mainHTML = template;
+            
+            for (const tag of tags) {
+                const tagName = tag.replace(/{{|}}|\s/g, "");
+                const tagPath = path.join(componentsPath, `${tagName}.html`);
+                const component = await fs.promises.readFile(tagPath, "utf8");
+                mainHTML = mainHTML.replace(tag, component);
+            }
+            await fs.promises.writeFile(indexPath, mainHTML, "utf8");
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+copyDir(folderPath, copyPath)
+.then(() => createStyles())
+.then(() => replaceTags())
+.catch(err => console.error(err));
